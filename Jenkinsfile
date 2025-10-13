@@ -3,51 +3,63 @@ pipeline {
 
     environment {
         DOCKER_IMAGE_NAME = 'project-back'
-        DOCKERFILE_PATH = './Dockerfile'
-        BUILD_CONTEXT = '.'
+        DOCKERFILE_PATH = 'Dockerfile'        // Jenkins workspace 기준
+        PROJECT_PATH = "/home/ubuntu/devops-midterm/back"   // 빌드할 폴더
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout & Pull Latest') {
             steps {
-                echo 'Checking out code from GitHub...'
-                checkout scm
-
-                sh '''
-                    echo "Current commit: $(git rev-parse --short HEAD)"
-                    echo "Branch: $(git rev-parse --abbrev-ref HEAD)"
-                    echo "Commit message: $(git log -1 --pretty=%B)"
-                '''
+                echo "Moving to project folder and updating code..."
+                dir("${PROJECT_PATH}") {
+                    // Git pull로 최신 코드 가져오기
+                    sh '''
+                        git reset --hard
+                        git pull origin main
+                        echo "Current commit: $(git rev-parse --short HEAD)"
+                        echo "Branch: $(git rev-parse --abbrev-ref HEAD)"
+                        echo "Commit message: $(git log -1 --pretty=%B)"
+                    '''
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
-                script {
-                    dir("${BUILD_CONTEXT}") {
-                        sh """
-                            docker build \
-                                -t ${DOCKER_IMAGE_NAME}:latest \
-                                -t ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} \
-                                -t ${DOCKER_IMAGE_NAME}:$(git rev-parse --short HEAD) \
-                                -f ${DOCKERFILE_PATH} \
-                                .
-                        """
-                    }
+                dir("${PROJECT_PATH}") {
+                    sh """
+                        docker build \
+                            -t ${DOCKER_IMAGE_NAME}:latest \
+                            -t ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} \
+                            -t ${DOCKER_IMAGE_NAME}:$(git rev-parse --short HEAD) \
+                            -f ${DOCKERFILE_PATH} \
+                            .
+                    """
+                    sh "docker images | grep ${DOCKER_IMAGE_NAME}"
                 }
-                sh "docker images | grep ${DOCKER_IMAGE_NAME}"
             }
         }
 
+        stage('Docker Compose Up') {
+            steps {
+                echo 'Starting services with Docker Compose...'
+                dir("${PROJECT_PATH}") {
+                    sh """
+                        docker-compose pull
+                        docker-compose up -d
+                    """
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo "Docker image build & push completed for build #${BUILD_NUMBER}"
+            echo "Deployment completed successfully for build #${BUILD_NUMBER}"
         }
         failure {
-            echo 'Pipeline failed. Check logs.'
+            echo "Pipeline failed. Check logs."
         }
     }
 }

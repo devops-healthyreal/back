@@ -11,42 +11,47 @@ pipeline {
     }
 
     stages {
-         stage('Checkout & Build on Remote') {
+        stage('Checkout & Build on Remote') {
             steps {
                 sshagent(credentials: ['admin']) {
                     sh """
-                    ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << EOF
-                            cd ${REMOTE_PATH}
-                            cd ${PROJECT_PATH}
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << EOF
+                            set -e
+                            cd ${REMOTE_PATH}/${PROJECT_PATH}
+
+                            echo "Updating code..."
                             git reset --hard
                             git pull origin main
+
                             echo "Current commit: \$(git rev-parse --short HEAD)"
                             echo "Branch: \$(git rev-parse --abbrev-ref HEAD)"
                             echo "Commit message: \$(git log -1 --pretty=%B)"
 
+                            echo "Building Docker image..."
                             docker build \
                                 -t ${DOCKER_IMAGE_NAME}:latest \
                                 -t ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} \
                                 -f ${DOCKERFILE_PATH} \
                                 .
-                            EOF
+EOF
                     """
                 }
             }
+        }
 
-        stage('Build Docker Image') {
+        stage('Docker Compose Up on Remote') {
             steps {
-                echo 'Building Docker image...'
-                dir("${REMOTE_PATH}") {
+                sshagent(credentials: ['admin']) {
                     sh """
-                    ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << EOF
-                            -t ${DOCKER_IMAGE_NAME}:latest \
-                            -t ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} \
-                            -f ${DOCKERFILE_PATH} \
-                            .
-                            EOF
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << EOF
+                            set -e
+                            cd ${REMOTE_PATH}/${PROJECT_PATH}
+
+                            echo "Starting services with Docker Compose..."
+                            docker-compose pull
+                            docker-compose up -d
+EOF
                     """
-                    sh "docker images | grep ${DOCKER_IMAGE_NAME}"
                 }
             }
         }

@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE_NAME = 'project-back'
-        DOCKERFILE_PATH = 'Dockerfile'        // Jenkins workspace 기준
+        DOCKERFILE_PATH = 'Dockerfile'
         PROJECT_PATH = "/home/ubuntu/devops-midterm/back"   // 빌드할 폴더
     }
 

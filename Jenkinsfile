@@ -1,6 +1,7 @@
 pipeline {
     agent any
 
+
     environment {
         DOCKER_IMAGE_NAME = 'project-back'
         DOCKERFILE_PATH = 'Dockerfile'        // Jenkins workspace 기준

@@ -20,7 +20,8 @@ pipeline {
                             cd ${REMOTE_PATH}/${PROJECT_PATH}
 
                             echo "Updating code..."
-                            git reset --hard
+                            git fetch origin
+                            git checkout main
                             git pull origin main
 
                             echo "Current commit: \$(git rev-parse --short HEAD)"

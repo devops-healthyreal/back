@@ -40,22 +40,6 @@ EOF
                 }
             }
         }
-
-        stage('Docker Compose Up on Remote') {
-            steps {
-                sshagent(credentials: ['admin']) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << EOF
-                            set -e
-                            cd ${REMOTE_PATH}
-
-                            echo "Starting services with Docker Compose..."
-                            docker-compose up -d
-EOF
-                    """
-                }
-            }
-        }
     }
 
     post {

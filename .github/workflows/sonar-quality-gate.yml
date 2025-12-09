@@ -39,8 +39,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}   # SonarCloud 토큰
         run: |
-          ./mvnw -B clean verify -DskipTests=true
-            org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+            ./mvnw clean verify -DskipTests=true sonar:sonar
             -Dsonar.projectKey=healthyreal_back
             -Dsonar.organization=devops-healthyreal
             -Dsonar.host.url=https://sonarcloud.io 
